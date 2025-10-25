@@ -33,35 +33,36 @@ export default function Dashboard() {
   ];
 
   const cards = [
-    {
-      title: "Pomodoro",
-      desc: "Focus sessions & productivity stats",
-      link: "/pomodoro",
-      color: "from-emerald-400 to-teal-400",
-      icon: <Clock size={28} />,
-    },
-    {
-      title: "Timetable",
-      desc: "View your weekly schedule",
-      link: "/timetable",
-      color: "from-blue-400 to-indigo-400",
-      icon: <Calendar size={28} />,
-    },
-    {
-      title: "Notes",
-      desc: "Quick access to your notes & ideas",
-      link: "/notes",
-      color: "from-orange-400 to-yellow-400",
-      icon: <StickyNote size={28} />,
-    },
-    {
-      title: "To-Do",
-      desc: "Track tasks and progress",
-      link: "/todo",
-      color: "from-pink-400 to-rose-400",
-      icon: <CheckSquare size={28} />,
-    },
-  ];
+  {
+    title: "Pomodoro",
+    desc: "Focus sessions & productivity stats",
+    link: "/app/pomodoro",
+    color: "from-emerald-400 to-teal-400",
+    icon: <Clock size={28} />,
+  },
+  {
+    title: "Timetable",
+    desc: "View your weekly schedule",
+    link: "/app/timetable",
+    color: "from-blue-400 to-indigo-400",
+    icon: <Calendar size={28} />,
+  },
+  {
+    title: "Notes",
+    desc: "Quick access to your notes & ideas",
+    link: "/app/notes",
+    color: "from-orange-400 to-yellow-400",
+    icon: <StickyNote size={28} />,
+  },
+  {
+    title: "To-Do",
+    desc: "Track tasks and progress",
+    link: "/app/todo",
+    color: "from-pink-400 to-rose-400",
+    icon: <CheckSquare size={28} />,
+  },
+];
+
 
   return (
     <div className="flex flex-col gap-10">

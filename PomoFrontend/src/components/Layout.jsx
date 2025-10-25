@@ -14,31 +14,31 @@ export default function Layout() {
 
         <nav className="flex flex-wrap gap-6 text-sm justify-end">
           <Link
-            to="/"
+            to="/app"
             className="flex items-center gap-1 hover:text-emerald-400 transition"
           >
             <Home size={18} /> Dashboard
           </Link>
           <Link
-            to="/pomodoro"
+            to="/app/pomodoro"
             className="flex items-center gap-1 hover:text-emerald-400 transition"
           >
             <Clock size={18} /> Pomodoro
           </Link>
           <Link
-            to="/timetable"
+            to="/app/timetable"
             className="flex items-center gap-1 hover:text-blue-400 transition"
           >
             <Calendar size={18} /> Timetable
           </Link>
           <Link
-            to="/notes"
+            to="/app/notes"
             className="flex items-center gap-1 hover:text-orange-400 transition"
           >
             <StickyNote size={18} /> Notes
           </Link>
           <Link
-            to="/todo"
+            to="/app/todo"
             className="flex items-center gap-1 hover:text-pink-400 transition"
           >
             <CheckSquare size={18} /> To-Do
