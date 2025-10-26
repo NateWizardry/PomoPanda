@@ -1,4 +1,3 @@
-// App.jsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
@@ -9,7 +8,7 @@ import Timetable from "./pages/Timetable";
 import Notes from "./pages/Notes";
 import Todo from "./pages/Todo";
 import Login from "./pages/Login";
-import ProtectedRoute from "./components/ProtectedRoute"; // import the wrapper
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   const user = JSON.parse(localStorage.getItem("user") || "null");

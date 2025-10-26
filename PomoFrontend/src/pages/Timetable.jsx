@@ -2,36 +2,68 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Plus, Calendar, BookOpen, Palette } from "lucide-react";
 
-/**
- * Timetable Page
- * - Weekly Schedule grid with Add Event modal
- * - Sidebar: Today's Classes + Subjects
- * - Events stored in localStorage under 'pomo_events'
- */
-
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOURS = Array.from({ length: 12 }).map((_, i) => `${i + 6}:00`);
 
+const BACKEND_URL = "http://localhost:5000";
+
 export default function Timetable() {
-  const [events, setEvents] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("pomo_events") || "[]"); } catch { return []; }
-  });
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const userId = user?.id;
+
+  const [events, setEvents] = useState([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", day: "Mon", hour: "9:00", subject: "Study Time", color: "#60a5fa" });
+  const [form, setForm] = useState({
+    title: "",
+    day: "Mon",
+    hour: "9:00",
+    subject: "Study Time",
+    color: "#60a5fa",
+  });
 
+  // Fetch events from backend
   useEffect(() => {
-    localStorage.setItem("pomo_events", JSON.stringify(events));
-  }, [events]);
+    if (!userId) return;
 
+    fetch(`${BACKEND_URL}/api/timetable/${userId}`)
+      .then((res) => res.json())
+      .then((data) => setEvents(data))
+      .catch((err) => console.error("Error fetching timetable events:", err));
+  }, [userId]);
+
+  // Add new event
   function addEvent(e) {
     e.preventDefault();
-    setEvents((s) => [...s, { ...form, id: Date.now() }]);
-    setForm({ title: "", day: "Mon", hour: "9:00", subject: "Study Time", color: "#60a5fa" });
-    setOpen(false);
+    if (!userId) return;
+
+    const newEventData = { ...form, userId };
+
+    fetch(`${BACKEND_URL}/api/timetable`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newEventData),
+    })
+      .then((res) => res.json())
+      .then((savedEvent) => {
+        setEvents((s) => [...s, savedEvent]);
+        setForm({
+          title: "",
+          day: "Mon",
+          hour: "9:00",
+          subject: "Study Time",
+          color: "#60a5fa",
+        });
+        setOpen(false);
+      })
+      .catch((err) => console.error("Error adding event:", err));
   }
 
+  // Delete event
   function removeEvent(id) {
-    setEvents((s) => s.filter((ev) => ev.id !== id));
+    fetch(`${BACKEND_URL}/api/timetable/${id}`, { method: "DELETE" })
+      .then((res) => res.json())
+      .then(() => setEvents((s) => s.filter((ev) => ev.id !== id)))
+      .catch((err) => console.error("Error deleting event:", err));
   }
 
   const today = DAYS[new Date().getDay() - 1] || "Mon";
@@ -39,11 +71,9 @@ export default function Timetable() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6">
-      {/* Page Title */}
       <h1 className="text-2xl font-bold mb-10">Timetable</h1>
 
       <div className="flex flex-col lg:flex-row justify-center gap-8">
-        {/* Left: Weekly Schedule + Timetable Grid */}
         <div className="flex-1 max-w-[900px]">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2 text-lg font-semibold text-slate-200">
@@ -58,7 +88,6 @@ export default function Timetable() {
             </button>
           </div>
 
-          {/* Timetable Grid */}
           <section className="bg-[rgba(255,255,255,0.03)] border border-slate-800 rounded-2xl p-4 shadow-lg overflow-auto">
             <div className="grid grid-cols-8 gap-1 text-center">
               <div className="p-2 bg-gradient-to-b from-slate-800 to-slate-700 font-semibold text-sm">Time</div>
@@ -109,9 +138,7 @@ export default function Timetable() {
           </section>
         </div>
 
-        {/* Right Sidebar */}
         <aside className="flex flex-col gap-6 w-[280px]">
-          {/* Today's Classes */}
           <div className="bg-[rgba(255,255,255,0.03)] border border-slate-800 rounded-2xl p-4 shadow-lg">
             <div className="flex items-center gap-2 mb-3 text-sm font-semibold">
               <BookOpen size={18} className="text-green-400" />
@@ -132,7 +159,6 @@ export default function Timetable() {
             </div>
           </div>
 
-          {/* Subjects */}
           <div className="bg-[rgba(255,255,255,0.03)] border border-slate-800 rounded-2xl p-4 shadow-lg">
             <div className="flex items-center gap-2 mb-3 text-sm font-semibold">
               <Palette size={18} className="text-blue-400" />
@@ -149,7 +175,6 @@ export default function Timetable() {
         </aside>
       </div>
 
-      {/* Add Event Modal */}
       {open && (
         <div className="fixed inset-0 z-40 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} />

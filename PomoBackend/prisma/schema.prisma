@@ -9,13 +9,17 @@ datasource db {
 
 model User {
   id        Int      @id @default(autoincrement())
-  username  String   @unique
+  username  String
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
 
-  notes Note[] // 1-to-many relationship
+  notes     Note[]         
+  timetable TimetableEvent[] 
+  todo  Todo[]
+
 }
+
 
 model Note {
   id        Int      @id @default(autoincrement())
@@ -27,3 +31,25 @@ model Note {
   user   User @relation(fields: [userId], references: [id])
 }
 
+model TimetableEvent {
+  id        Int      @id @default(autoincrement())
+  title     String
+  day       String
+  hour      String
+  subject   String
+  color     String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+
+model Todo {
+  id       Int    @id @default(autoincrement())
+  text     String
+  done     Boolean @default(false)
+  category String  @default("General")
+  userId   Int
+  user     User    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}

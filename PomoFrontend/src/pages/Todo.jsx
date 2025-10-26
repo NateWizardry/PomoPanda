@@ -2,13 +2,10 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Todo() {
-  const [tasks, setTasks] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("pomo_tasks") || "[]");
-    } catch {
-      return [];
-    }
-  });
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const userId = user?.id;
+
+  const [tasks, setTasks] = useState([]);
   const [text, setText] = useState("");
   const [filter, setFilter] = useState("All");
   const [categories, setCategories] = useState([
@@ -18,30 +15,53 @@ export default function Todo() {
   ]);
   const [newCategory, setNewCategory] = useState("");
 
-  useEffect(() => {
-    localStorage.setItem("pomo_tasks", JSON.stringify(tasks));
-  }, [tasks]);
+  const API_BASE = "http://localhost:5000/api/todo"; // <-- full backend URL
 
+  // Load tasks from backend
+  useEffect(() => {
+    if (!userId) return;
+
+    fetch(`${API_BASE}/${userId}`)
+      .then((res) => res.json())
+      .then((data) => setTasks(data))
+      .catch((err) => console.error("Error fetching tasks:", err));
+  }, [userId]);
+
+  // Add task
   const addTask = () => {
-    if (!text.trim()) return;
-    setTasks((s) => [
-      { id: Date.now(), text: text.trim(), done: false, category: "General" },
-      ...s,
-    ]);
-    setText("");
+    if (!text.trim() || !userId) return;
+
+    const newTask = { text: text.trim(), userId, category: "General", done: false };
+
+    fetch(API_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newTask),
+    })
+      .then((res) => res.json())
+      .then((saved) => {
+        setTasks((s) => [saved, ...s]);
+        setText("");
+      })
+      .catch((err) => console.error("Error adding task:", err));
   };
 
+  // Remove task
+  const remove = (id) => {
+    fetch(`${API_BASE}/${userId}/${id}`, { method: "DELETE" }) // <-- include userId in DELETE
+      .then((res) => res.json())
+      .then(() => setTasks((s) => s.filter((t) => t.id !== id)))
+      .catch((err) => console.error("Error deleting task:", err));
+  };
+
+  // Toggle done (frontend only for now)
   const toggle = (id) =>
     setTasks((s) =>
       s.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
     );
 
-  const remove = (id) => setTasks((s) => s.filter((t) => t.id !== id));
-
   const completed = tasks.filter((t) => t.done).length;
-  const progress = tasks.length
-    ? Math.round((completed / tasks.length) * 100)
-    : 0;
+  const progress = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
 
   const filters = ["All", "Pending", "Completed", ...categories.map((c) => c.name)];
   const filteredTasks = tasks.filter((t) => {
@@ -53,16 +73,12 @@ export default function Todo() {
 
   const addCategory = () => {
     if (!newCategory.trim()) return;
-    setCategories((s) => [
-      ...s,
-      { name: newCategory.trim(), color: "bg-slate-500" },
-    ]);
+    setCategories((s) => [...s, { name: newCategory.trim(), color: "bg-slate-500" }]);
     setNewCategory("");
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6 flex flex-col">
-      {/* Page Title */}
       <h1 className="text-2xl font-bold mb-8">To-Do Manager</h1>
 
       <div className="flex flex-1 gap-8">
@@ -71,9 +87,7 @@ export default function Todo() {
           {/* Progress */}
           <div className="p-6 rounded-xl bg-slate-900/60 border border-slate-800 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-slate-200">
-                Progress Overview
-              </h3>
+              <h3 className="text-lg font-semibold text-slate-200">Progress Overview</h3>
               <span className="text-sm text-slate-400">
                 {completed} of {tasks.length} tasks completed ({progress}%)
               </span>
@@ -144,9 +158,7 @@ export default function Todo() {
             {filteredTasks.length === 0 ? (
               <div className="p-16 text-center border border-dashed border-slate-700 rounded-xl text-slate-500">
                 <p>No tasks yet — time to get organized ✦</p>
-                <p className="mt-2 text-emerald-500 font-medium">
-                  + Add your first task
-                </p>
+                <p className="mt-2 text-emerald-500 font-medium">+ Add your first task</p>
               </div>
             ) : (
               <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -169,13 +181,7 @@ export default function Todo() {
                             onChange={() => toggle(t.id)}
                             className="w-5 h-5 accent-emerald-500"
                           />
-                          <span
-                            className={`${
-                              t.done
-                                ? "line-through text-slate-500"
-                                : "text-slate-200 font-medium"
-                            }`}
-                          >
+                          <span className={`${t.done ? "line-through text-slate-500" : "text-slate-200 font-medium"}`}>
                             {t.text}
                           </span>
                         </label>
@@ -200,9 +206,7 @@ export default function Todo() {
           {/* Categories */}
           <div className="p-6 rounded-xl bg-slate-900/60 border border-slate-800 shadow-sm">
             <h3 className="text-lg font-semibold mb-4 text-slate-200">Categories</h3>
-            <p className="text-sm text-slate-400 mb-4">
-              Organize your tasks by category
-            </p>
+            <p className="text-sm text-slate-400 mb-4">Organize your tasks by category</p>
             <ul className="space-y-3">
               {categories.map((c, i) => (
                 <li key={i} className="flex items-center gap-3">
@@ -234,12 +238,8 @@ export default function Todo() {
             transition={{ duration: 0.6 }}
             className="mt-4 p-6 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-slate-800 shadow"
           >
-            <h4 className="text-sm font-semibold text-emerald-400 mb-2">
-              Daily Motivation
-            </h4>
-            <p className="text-slate-300 text-sm italic">
-              “Small steps every day lead to big changes.”
-            </p>
+            <h4 className="text-sm font-semibold text-emerald-400 mb-2">Daily Motivation</h4>
+            <p className="text-slate-300 text-sm italic">“Small steps every day lead to big changes.”</p>
           </motion.div>
         </aside>
       </div>
