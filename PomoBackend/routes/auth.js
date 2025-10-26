@@ -53,7 +53,6 @@ router.post("/register", async (req, res) => {
     return res.status(400).json({ error: "Email or username already exists" });
 
   const hashedPassword = await bcrypt.hash(password, 10);
-
   const user = await prisma.user.create({
     data: { username, email, password: hashedPassword },
   });
@@ -94,12 +93,10 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user)
-    return res.status(400).json({ error: "Invalid email or password" });
+  if (!user) return res.status(400).json({ error: "Invalid email or password" });
 
   const match = await bcrypt.compare(password, user.password);
-  if (!match)
-    return res.status(400).json({ error: "Invalid email or password" });
+  if (!match) return res.status(400).json({ error: "Invalid email or password" });
 
   res.json({
     message: "Login successful",

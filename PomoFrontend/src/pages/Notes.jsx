@@ -1,8 +1,9 @@
+// Notes.jsx
 import React, { useState, useEffect } from "react";
 import { Trash, BookOpen, Folder, Lightbulb } from "lucide-react";
 
-export default function NotesIdeas() {
-  const API_URL = "http://localhost:5000/api/notes"; // ⚠️ update if backend runs elsewhere
+export default function Notes({ userId }) {
+  const API_URL = "http://localhost:5000/api/notes";
 
   const [notes, setNotes] = useState([]);
   const [activeFolder, setActiveFolder] = useState("All Notes");
@@ -16,12 +17,12 @@ export default function NotesIdeas() {
     { name: "Ideas", color: "text-yellow-400", icon: Lightbulb },
   ];
 
-  // 🟢 Fetch notes from backend
+  // Fetch user notes
   useEffect(() => {
     async function fetchNotes() {
       setLoading(true);
       try {
-        const res = await fetch(API_URL);
+        const res = await fetch(`${API_URL}/${userId}`);
         const data = await res.json();
         setNotes(data);
       } catch (err) {
@@ -31,20 +32,19 @@ export default function NotesIdeas() {
       }
     }
     fetchNotes();
-  }, []);
+  }, [userId]);
 
-  // 🟢 Save note to backend
+  // Save new note
   async function saveNote() {
     if (!newNote.trim()) return;
-
     try {
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title:
-            activeFolder === "All Notes" ? "General" : activeFolder,
+          title: activeFolder === "All Notes" ? "General" : activeFolder,
           content: newNote,
+          userId,
         }),
       });
 
@@ -57,7 +57,7 @@ export default function NotesIdeas() {
     }
   }
 
-  // 🟢 Delete note from backend
+  // Delete note
   async function removeNote(id) {
     try {
       const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
@@ -68,7 +68,7 @@ export default function NotesIdeas() {
     }
   }
 
-  // 🟢 Filter by folder
+  // Filter notes by folder
   const filteredNotes =
     activeFolder === "All Notes"
       ? notes
@@ -76,7 +76,7 @@ export default function NotesIdeas() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col p-6">
-      <h1 className="text-2xl font-bold mb-8">Notes & Ideas</h1>
+      <h1 className="text-2xl font-bold mb-6">Notes & Ideas</h1>
 
       <div className="flex flex-1 gap-8">
         {/* Sidebar */}
@@ -114,9 +114,7 @@ export default function NotesIdeas() {
 
           {/* Notes List */}
           <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-300 mb-2">
-              {activeFolder}
-            </h3>
+            <h3 className="text-sm font-semibold text-slate-300 mb-2">{activeFolder}</h3>
 
             {loading ? (
               <div className="text-slate-500 text-sm">Loading notes...</div>

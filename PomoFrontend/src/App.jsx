@@ -1,6 +1,6 @@
 // App.jsx
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom"; // import Navigate
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -9,26 +9,33 @@ import Timetable from "./pages/Timetable";
 import Notes from "./pages/Notes";
 import Todo from "./pages/Todo";
 import Login from "./pages/Login";
+import ProtectedRoute from "./components/ProtectedRoute"; // import the wrapper
 
 export default function App() {
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const userId = user?.id;
+
   return (
     <Routes>
-      {/* Default route "/" redirects to /login */}
       <Route path="/" element={<Navigate to="/login" replace />} />
-
-      {/* Login Page (no layout) */}
       <Route path="/login" element={<Login />} />
 
-      {/* All pages under Layout */}
-      <Route path="/app" element={<Layout />}>
+      {/* Protected routes */}
+      <Route
+        path="/app"
+        element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<Dashboard />} />
         <Route path="pomodoro" element={<Pomodoro />} />
         <Route path="timetable" element={<Timetable />} />
-        <Route path="notes" element={<Notes />} />
+        <Route path="notes" element={<Notes userId={userId} />} />
         <Route path="todo" element={<Todo />} />
       </Route>
 
-      {/* Fallback 404 */}
       <Route
         path="*"
         element={

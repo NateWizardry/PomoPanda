@@ -2,21 +2,51 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-
-// import the image
 import bgImage from "./kung_fu_panda_4_po___live_wallpaper_for_pc_by_favorisxp_dh4kldk-pre.jpg";
 
 export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [form, setForm] = useState({ email: "", password: "", username: "" });
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(isSignUp ? "Sign Up Data:" : "Login Data:", form);
-    navigate("/app"); // redirect to dashboard
+    setError("");
+
+    const url = isSignUp
+      ? "http://localhost:5000/api/auth/register"
+      : "http://localhost:5000/api/auth/login";
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Something went wrong");
+        return;
+      }
+
+      // Save user info in localStorage (id is critical for notes)
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ id: data.id, username: data.username, email: data.email })
+      );
+
+      // Redirect to main app
+      navigate("/app");
+    } catch (err) {
+      console.error(err);
+      setError("Network error");
+    }
   };
 
   return (
@@ -25,7 +55,6 @@ export default function Login() {
       style={{ backgroundImage: `url(${bgImage})` }}
     >
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -61,7 +90,6 @@ export default function Login() {
               className="w-full px-4 py-2 rounded-lg bg-slate-800/60 text-white border border-slate-700 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500 outline-none transition"
             />
           </div>
-
           <div>
             <label className="block text-slate-400 mb-1 text-sm">Password</label>
             <input
@@ -73,6 +101,8 @@ export default function Login() {
               className="w-full px-4 py-2 rounded-lg bg-slate-800/60 text-white border border-slate-700 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500 outline-none transition"
             />
           </div>
+
+          {error && <p className="text-red-500 text-sm">{error}</p>}
 
           <motion.button
             whileHover={{ scale: 1.03 }}

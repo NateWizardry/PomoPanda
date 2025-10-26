@@ -1,8 +1,26 @@
 import React from "react";
-import { Link, Outlet } from "react-router-dom";
-import { Home, Clock, Calendar, StickyNote, CheckSquare } from "lucide-react";
+import { Link, Outlet, useNavigate } from "react-router-dom";
+import {
+  Home,
+  Clock,
+  Calendar,
+  StickyNote,
+  CheckSquare,
+  LogOut,
+} from "lucide-react";
 
 export default function Layout() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Clear auth data
+    localStorage.removeItem("token"); // or sessionStorage.removeItem("token")
+    localStorage.removeItem("user");  // if you store user info too
+
+    // Redirect to login page
+    navigate("/login");
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Navbar */}
@@ -12,7 +30,7 @@ export default function Layout() {
           <h1 className="text-2xl font-bold">PomoPanda</h1>
         </div>
 
-        <nav className="flex flex-wrap gap-6 text-sm justify-end">
+        <nav className="flex flex-wrap gap-6 text-sm justify-end items-center">
           <Link
             to="/app"
             className="flex items-center gap-1 hover:text-emerald-400 transition"
@@ -43,12 +61,19 @@ export default function Layout() {
           >
             <CheckSquare size={18} /> To-Do
           </Link>
+
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1 hover:text-red-400 transition text-sm"
+          >
+            <LogOut size={18} /> Logout
+          </button>
         </nav>
       </header>
 
       {/* Main content area */}
       <main className="flex-1 p-10">
-        {/* This is where each page will render its content */}
         <Outlet />
       </main>
     </div>
