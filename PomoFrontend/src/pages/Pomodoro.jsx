@@ -178,7 +178,7 @@ export default function Pomodoro() {
             <h4 className="font-semibold text-white">Zen Mode</h4>
             <p className="text-sm text-slate-400 mt-2">Soothing vibes to help you focus — ambient background + minimal UI.</p>
             <div className="mt-3 rounded-md overflow-hidden">
-              <img src="src\zen.png" alt="zen" className="w-full h-32 object-cover" />
+              <img src="/zen.png" alt="zen" className="w-full h-32 object-cover" />
             </div>
           </div>
         </aside>

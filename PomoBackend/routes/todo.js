@@ -1,3 +1,4 @@
+// routes/todo.js
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 
@@ -7,7 +8,7 @@ const prisma = new PrismaClient();
 /**
  * @swagger
  * tags:
- *   name: Todo
+ *   name: Todos
  *   description: Manage user to-do tasks
  */
 
@@ -15,8 +16,8 @@ const prisma = new PrismaClient();
  * @swagger
  * /api/todo/{userId}:
  *   get:
- *     summary: Get all tasks for a specific user
- *     tags: [Todo]
+ *     summary: Get all todo tasks for a specific user
+ *     tags: [Todos]
  *     parameters:
  *       - in: path
  *         name: userId
@@ -26,28 +27,32 @@ const prisma = new PrismaClient();
  *         description: ID of the user
  *     responses:
  *       200:
- *         description: List of tasks for the user
+ *         description: List of todos for the user
  *       404:
  *         description: User not found
  */
 router.get("/:userId", async (req, res) => {
   const { userId } = req.params;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(userId) },
+      include: { todo: true }, // ✅ FIXED: use 'todo' (singular)
+    });
 
-  const user = await prisma.user.findUnique({
-    where: { id: parseInt(userId) },
-    include: { todo: true },
-  });
-  if (!user) return res.status(404).json({ error: "User not found" });
-
-  res.json(user.todo);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json(user.todo);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch todos" });
+  }
 });
 
 /**
  * @swagger
  * /api/todo:
  *   post:
- *     summary: Create a new task for a specific user
- *     tags: [Todo]
+ *     summary: Create a new todo for a specific user
+ *     tags: [Todos]
  *     requestBody:
  *       required: true
  *       content:
@@ -60,72 +65,118 @@ router.get("/:userId", async (req, res) => {
  *             properties:
  *               text:
  *                 type: string
- *               userId:
- *                 type: integer
  *               category:
  *                 type: string
  *               done:
  *                 type: boolean
+ *               userId:
+ *                 type: integer
  *     responses:
  *       201:
- *         description: Task created successfully
+ *         description: Todo created successfully
  *       400:
  *         description: Missing fields
  */
 router.post("/", async (req, res) => {
-  const { text, userId, category = "General", done = false } = req.body;
-
+  const { text, category, done, userId } = req.body;
   if (!text || !userId)
-    return res.status(400).json({ error: "Missing required fields" });
+    return res.status(400).json({ error: "Missing fields" });
 
-  const user = await prisma.user.findUnique({ where: { id: parseInt(userId) } });
-  if (!user) return res.status(404).json({ error: "User not found" });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(userId) },
+    });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-  const task = await prisma.todo.create({
-    data: { text, userId: parseInt(userId), category, done },
-  });
-
-  res.status(201).json(task);
+    const todo = await prisma.todo.create({
+      data: {
+        text,
+        category: category || "General",
+        done: done || false,
+        userId: parseInt(userId),
+      },
+    });
+    res.status(201).json(todo);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create todo" });
+  }
 });
 
 /**
  * @swagger
- * /api/todo/{userId}/{taskId}:
- *   delete:
- *     summary: Delete a task for a specific user
- *     tags: [Todo]
+ * /api/todo/{id}:
+ *   patch:
+ *     summary: Update a todo's done status
+ *     tags: [Todos]
  *     parameters:
  *       - in: path
- *         name: userId
+ *         name: id
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID of the task owner
- *       - in: path
- *         name: taskId
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID of the task to delete
+ *         description: ID of the todo
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               done:
+ *                 type: boolean
  *     responses:
  *       200:
- *         description: Task deleted successfully
+ *         description: Todo updated successfully
  *       404:
- *         description: Task not found or does not belong to user
+ *         description: Todo not found
  */
-router.delete("/:userId/:taskId", async (req, res) => {
-  const { userId, taskId } = req.params;
+router.patch("/:id", async (req, res) => {
+  const { id } = req.params;
+  const { done } = req.body;
 
   try {
-    const task = await prisma.todo.findUnique({ where: { id: parseInt(taskId) } });
-    if (!task || task.userId !== parseInt(userId))
-      return res.status(404).json({ error: "Task not found or does not belong to user" });
-
-    await prisma.todo.delete({ where: { id: parseInt(taskId) } });
-    res.json({ message: "Task deleted" });
+    const todo = await prisma.todo.update({
+      where: { id: parseInt(id) },
+      data: { done },
+    });
+    res.json(todo);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to delete task" });
+    res.status(404).json({ error: "Todo not found" });
+  }
+});
+
+/**
+ * @swagger
+ * /api/todo/{id}:
+ *   delete:
+ *     summary: Delete a todo
+ *     tags: [Todos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the todo
+ *     responses:
+ *       200:
+ *         description: Todo deleted successfully
+ *       404:
+ *         description: Todo not found
+ */
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await prisma.todo.delete({
+      where: { id: parseInt(id) },
+    });
+    res.json({ message: "Todo deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(404).json({ error: "Todo not found" });
   }
 });
 

@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from "react";
 import { Trash, BookOpen, Folder, Lightbulb } from "lucide-react";
 
-export default function Notes({ userId }) {
+export default function Notes() {
   const API_URL = "http://localhost:5000/api/notes";
 
   const [notes, setNotes] = useState([]);
   const [activeFolder, setActiveFolder] = useState("All Notes");
   const [newNote, setNewNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState(null); // ✅ Track current user
 
   const folders = [
     { name: "All Notes", color: "text-slate-200", icon: BookOpen },
@@ -17,8 +18,18 @@ export default function Notes({ userId }) {
     { name: "Ideas", color: "text-yellow-400", icon: Lightbulb },
   ];
 
-  // Fetch user notes
+  // ✅ Get the latest user ID from localStorage
   useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser && storedUser.id) {
+      setUserId(storedUser.id);
+    }
+  }, []); // runs once on mount
+
+  // ✅ Fetch notes whenever userId changes
+  useEffect(() => {
+    if (!userId) return;
+
     async function fetchNotes() {
       setLoading(true);
       try {
@@ -31,8 +42,9 @@ export default function Notes({ userId }) {
         setLoading(false);
       }
     }
+
     fetchNotes();
-  }, [userId]);
+  }, [userId]); // ✅ refetch whenever userId changes
 
   // Save new note
   async function saveNote() {
@@ -44,7 +56,7 @@ export default function Notes({ userId }) {
         body: JSON.stringify({
           title: activeFolder === "All Notes" ? "General" : activeFolder,
           content: newNote,
-          userId,
+          userId, // ✅ always current
         }),
       });
 
@@ -57,18 +69,25 @@ export default function Notes({ userId }) {
     }
   }
 
-  // Delete note
   async function removeNote(id) {
-    try {
-      const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete note");
-      setNotes((prev) => prev.filter((n) => n.id !== id));
-    } catch (err) {
-      console.error(err);
-    }
-  }
+  try {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userId = user?.id;
 
-  // Filter notes by folder
+    const res = await fetch(`${API_URL}/${userId}/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) throw new Error("Failed to delete note");
+
+    setNotes((prev) => prev.filter((n) => n.id !== id));
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+
+  // Filter notes
   const filteredNotes =
     activeFolder === "All Notes"
       ? notes
@@ -81,7 +100,6 @@ export default function Notes({ userId }) {
       <div className="flex flex-1 gap-8">
         {/* Sidebar */}
         <aside className="w-72 flex-shrink-0 space-y-6">
-          {/* Folders */}
           <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-300 mb-2">Folders</h3>
             <ul className="space-y-1">
@@ -112,7 +130,6 @@ export default function Notes({ userId }) {
             </ul>
           </div>
 
-          {/* Notes List */}
           <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-300 mb-2">{activeFolder}</h3>
 

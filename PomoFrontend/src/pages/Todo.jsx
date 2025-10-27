@@ -15,12 +15,11 @@ export default function Todo() {
   ]);
   const [newCategory, setNewCategory] = useState("");
 
-  const API_BASE = "http://localhost:5000/api/todo"; // <-- full backend URL
+  const API_BASE = "http://localhost:5000/api/todo";
 
-  // Load tasks from backend
+  // Load tasks
   useEffect(() => {
     if (!userId) return;
-
     fetch(`${API_BASE}/${userId}`)
       .then((res) => res.json())
       .then((data) => setTasks(data))
@@ -28,41 +27,56 @@ export default function Todo() {
   }, [userId]);
 
   // Add task
-  const addTask = () => {
+  const addTask = async () => {
     if (!text.trim() || !userId) return;
-
-    const newTask = { text: text.trim(), userId, category: "General", done: false };
-
-    fetch(API_BASE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newTask),
-    })
-      .then((res) => res.json())
-      .then((saved) => {
-        setTasks((s) => [saved, ...s]);
-        setText("");
-      })
-      .catch((err) => console.error("Error adding task:", err));
+    const newTask = {
+      text: text.trim(),
+      userId,
+      category: "General",
+      done: false,
+    };
+    try {
+      const res = await fetch(API_BASE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTask),
+      });
+      const saved = await res.json();
+      setTasks((prev) => [saved, ...prev]);
+      setText("");
+    } catch (err) {
+      console.error("Error adding task:", err);
+    }
   };
 
-  // Remove task
-  const remove = (id) => {
-    fetch(`${API_BASE}/${userId}/${id}`, { method: "DELETE" }) // <-- include userId in DELETE
-      .then((res) => res.json())
-      .then(() => setTasks((s) => s.filter((t) => t.id !== id)))
-      .catch((err) => console.error("Error deleting task:", err));
+  // Remove task ✅ fixed route
+  const remove = async (id) => {
+    try {
+      await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+    } catch (err) {
+      console.error("Error deleting task:", err);
+    }
   };
 
-  // Toggle done (frontend only for now)
-  const toggle = (id) =>
-    setTasks((s) =>
-      s.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
-    );
+  // Toggle done ✅ consistent with backend
+  const toggle = async (id, currentDone) => {
+    try {
+      const res = await fetch(`${API_BASE}/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ done: !currentDone }),
+      });
+      const updated = await res.json();
+      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+    } catch (err) {
+      console.error("Error toggling task:", err);
+    }
+  };
 
+  // Progress and filtering
   const completed = tasks.filter((t) => t.done).length;
   const progress = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
-
   const filters = ["All", "Pending", "Completed", ...categories.map((c) => c.name)];
   const filteredTasks = tasks.filter((t) => {
     if (filter === "All") return true;
@@ -82,7 +96,6 @@ export default function Todo() {
       <h1 className="text-2xl font-bold mb-8">To-Do Manager</h1>
 
       <div className="flex flex-1 gap-8">
-        {/* Main Content */}
         <main className="flex-1 space-y-8 overflow-y-auto">
           {/* Progress */}
           <div className="p-6 rounded-xl bg-slate-900/60 border border-slate-800 shadow-sm">
@@ -178,10 +191,14 @@ export default function Todo() {
                           <input
                             type="checkbox"
                             checked={t.done}
-                            onChange={() => toggle(t.id)}
+                            onChange={() => toggle(t.id, t.done)}
                             className="w-5 h-5 accent-emerald-500"
                           />
-                          <span className={`${t.done ? "line-through text-slate-500" : "text-slate-200 font-medium"}`}>
+                          <span
+                            className={`${
+                              t.done ? "line-through text-slate-500" : "text-slate-200 font-medium"
+                            }`}
+                          >
                             {t.text}
                           </span>
                         </label>
@@ -203,14 +220,13 @@ export default function Todo() {
 
         {/* Sidebar */}
         <aside className="w-80 border-l border-slate-800 p-8 flex flex-col gap-4">
-          {/* Categories */}
           <div className="p-6 rounded-xl bg-slate-900/60 border border-slate-800 shadow-sm">
             <h3 className="text-lg font-semibold mb-4 text-slate-200">Categories</h3>
             <p className="text-sm text-slate-400 mb-4">Organize your tasks by category</p>
             <ul className="space-y-3">
               {categories.map((c, i) => (
                 <li key={i} className="flex items-center gap-3">
-                  <span className={`w-3 h-3 rounded-full ${c.color} inline-block`}></span>
+                  <span className={`w-3 h-3 rounded-full ${c.color}`}></span>
                   <span className="text-slate-300">{c.name}</span>
                 </li>
               ))}
@@ -231,7 +247,6 @@ export default function Todo() {
             </div>
           </div>
 
-          {/* Daily Motivation */}
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
